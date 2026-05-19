@@ -1,0 +1,46 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #1a1f1a;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  color: #f0f0e8;
+  overflow: hidden;
+}
+
+#game-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 12px;
+}
+
+#game {
+  background: #87ceeb;
+  border: 3px solid #3a4a3a;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  image-rendering: pixelated;
+  max-width: 95vw;
+  max-height: 80vh;
+}
+
+#hud {
+  width: 960px;
+  max-width: 95vw;
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+#level-name {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+#hint {
+  opacity: 0.7;
+}
