@@ -4,7 +4,9 @@ A small 2D side-scrolling parkour platformer that runs in any modern browser. No
 
 ## Play
 
-Visit the live site (link will appear here once GitHub Pages is enabled), or clone this repo and double-click `index.html`.
+**[Play it here →](https://ananya-mishra15.github.io/parkour-game/)**
+
+Or clone this repo and double-click `index.html` to play locally.
 
 ## Controls
 
