@@ -14,12 +14,14 @@
       <div id="hint">← → move &nbsp;·&nbsp; Space jump (x2) &nbsp;·&nbsp; Shift slide &nbsp;·&nbsp; R restart &nbsp;·&nbsp; Shift+R reset save</div>
     </div>
     <div id="touch-controls" style="display:none">
-      <div id="touch-left-group">
-        <button id="touch-left" aria-label="Move left">&#9664;</button>
-        <button id="touch-right" aria-label="Move right">&#9654;</button>
+      <div id="touch-left" class="touch-zone" aria-label="Move left">
+        <span class="touch-label">&#9664;</span>
       </div>
-      <div id="touch-right-group">
-        <button id="touch-jump" aria-label="Jump">JUMP</button>
+      <div id="touch-right" class="touch-zone" aria-label="Move right">
+        <span class="touch-label">&#9654;</span>
+      </div>
+      <div id="touch-jump" class="touch-zone" aria-label="Jump">
+        <span class="touch-label">JUMP</span>
       </div>
       <button id="touch-restart" aria-label="Restart">&#8634;</button>
     </div>

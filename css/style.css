@@ -6,6 +6,8 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   color: #f0f0e8;
   overflow: hidden;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
 }
 
 #game-wrap {
@@ -53,20 +55,88 @@ html, body {
   inset: 0;
   pointer-events: none;
   z-index: 10;
-  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
 }
 
-#touch-controls button {
+.touch-zone {
+  position: absolute;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  align-items: flex-end;
+}
+
+#touch-left {
+  bottom: 0;
+  left: 0;
+  width: 25%;
+  height: 50%;
+  justify-content: center;
+  padding: 0 0 24px 20px;
+}
+
+#touch-right {
+  bottom: 0;
+  left: 25%;
+  width: 25%;
+  height: 50%;
+  justify-content: center;
+  padding: 0 0 24px 0;
+}
+
+#touch-jump {
+  bottom: 0;
+  right: 0;
+  width: 50%;
+  height: 50%;
+  justify-content: flex-end;
+  padding: 0 28px 24px 0;
+}
+
+.touch-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
+  font-size: 24px;
+  font-weight: 700;
+  pointer-events: none;
+  transition: background 0.05s, border-color 0.05s;
+}
+
+#touch-jump .touch-label {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.touch-zone.pressed .touch-label {
+  background: rgba(255,255,255,0.35);
+  border-color: rgba(255,255,255,0.7);
+  color: rgba(255,255,255,0.95);
+}
+
+#touch-restart {
   pointer-events: auto;
   position: absolute;
-  border: 2px solid rgba(255,255,255,0.4);
-  border-radius: 16px;
-  background: rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.8);
-  font-size: 28px;
-  font-weight: 700;
-  width: 72px;
-  height: 72px;
+  top: 12px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -75,45 +145,6 @@ html, body {
   user-select: none;
   -webkit-user-select: none;
   outline: none;
-}
-
-#touch-controls button:active {
-  background: rgba(255,255,255,0.35);
-  border-color: rgba(255,255,255,0.7);
-}
-
-#touch-left {
-  bottom: 24px;
-  left: 20px;
-}
-
-#touch-right {
-  bottom: 24px;
-  left: 104px;
-}
-
-#touch-jump {
-  bottom: 24px;
-  right: 20px;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  font-size: 18px;
-  letter-spacing: 1px;
-}
-
-#touch-restart {
-  top: 12px;
-  right: 20px;
-  width: 44px;
-  height: 44px;
-  font-size: 22px;
-  border-radius: 50%;
-  opacity: 0.6;
-}
-
-#touch-left-group, #touch-right-group {
-  display: contents;
 }
 
 .touch-device #game {
@@ -149,23 +180,21 @@ html, body {
   }
 }
 
-/* ── Tablet: larger buttons ── */
+/* ── Tablet: larger labels ── */
 
 @media (min-width: 768px) {
-  #touch-controls button {
-    width: 88px;
-    height: 88px;
-    font-size: 32px;
-    border-radius: 20px;
+  .touch-label {
+    width: 80px;
+    height: 80px;
+    font-size: 28px;
   }
-  #touch-left { bottom: 32px; left: 32px; }
-  #touch-right { bottom: 32px; left: 132px; }
-  #touch-jump {
-    bottom: 32px;
-    right: 32px;
-    width: 112px;
-    height: 112px;
-    font-size: 20px;
+  #touch-jump .touch-label {
+    width: 100px;
+    height: 100px;
+    font-size: 18px;
   }
-  #touch-restart { top: 16px; right: 32px; width: 52px; height: 52px; }
+  #touch-left { padding-left: 32px; padding-bottom: 32px; }
+  #touch-right { padding-bottom: 32px; }
+  #touch-jump { padding-right: 36px; padding-bottom: 32px; }
+  #touch-restart { top: 16px; right: 24px; width: 52px; height: 52px; }
 }
