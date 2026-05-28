@@ -9,6 +9,7 @@ html, body {
 }
 
 #game-wrap {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -43,4 +44,128 @@ html, body {
 
 #hint {
   opacity: 0.7;
+}
+
+/* ── Touch Controls ── */
+
+#touch-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+}
+
+#touch-controls button {
+  pointer-events: auto;
+  position: absolute;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.8);
+  font-size: 28px;
+  font-weight: 700;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+}
+
+#touch-controls button:active {
+  background: rgba(255,255,255,0.35);
+  border-color: rgba(255,255,255,0.7);
+}
+
+#touch-left {
+  bottom: 24px;
+  left: 20px;
+}
+
+#touch-right {
+  bottom: 24px;
+  left: 104px;
+}
+
+#touch-jump {
+  bottom: 24px;
+  right: 20px;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
+#touch-restart {
+  top: 12px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  border-radius: 50%;
+  opacity: 0.6;
+}
+
+#touch-left-group, #touch-right-group {
+  display: contents;
+}
+
+.touch-device #game {
+  touch-action: none;
+}
+
+.touch-device #hud {
+  font-size: 12px;
+}
+
+/* ── Rotate Prompt (portrait) ── */
+
+#rotate-prompt {
+  display: none;
+}
+
+@media (orientation: portrait) {
+  .touch-device #rotate-prompt {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0,0,0,0.85);
+    align-items: center;
+    justify-content: center;
+  }
+  #rotate-inner {
+    font-size: 20px;
+    color: #f0f0e8;
+    text-align: center;
+    padding: 24px;
+    opacity: 0.9;
+  }
+}
+
+/* ── Tablet: larger buttons ── */
+
+@media (min-width: 768px) {
+  #touch-controls button {
+    width: 88px;
+    height: 88px;
+    font-size: 32px;
+    border-radius: 20px;
+  }
+  #touch-left { bottom: 32px; left: 32px; }
+  #touch-right { bottom: 32px; left: 132px; }
+  #touch-jump {
+    bottom: 32px;
+    right: 32px;
+    width: 112px;
+    height: 112px;
+    font-size: 20px;
+  }
+  #touch-restart { top: 16px; right: 32px; width: 52px; height: 52px; }
 }

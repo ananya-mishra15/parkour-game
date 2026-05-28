@@ -55,5 +55,8 @@ Game.Input = (function () {
     endFrame,
     isDown: (action) => !!held[action],
     wasPressed: (action) => !!pressedThisFrame[action],
+    setHeld: (action, state) => { held[action] = state; },
+    press: (action) => { pressedQueue[action] = true; held[action] = true; },
+    release: (action) => { held[action] = false; },
   };
 })();

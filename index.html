@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Parkour Game</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -12,6 +13,20 @@
       <div id="level-name">Loading...</div>
       <div id="hint">← → move &nbsp;·&nbsp; Space jump (x2) &nbsp;·&nbsp; Shift slide &nbsp;·&nbsp; R restart &nbsp;·&nbsp; Shift+R reset save</div>
     </div>
+    <div id="touch-controls" style="display:none">
+      <div id="touch-left-group">
+        <button id="touch-left" aria-label="Move left">&#9664;</button>
+        <button id="touch-right" aria-label="Move right">&#9654;</button>
+      </div>
+      <div id="touch-right-group">
+        <button id="touch-jump" aria-label="Jump">JUMP</button>
+      </div>
+      <button id="touch-restart" aria-label="Restart">&#8634;</button>
+    </div>
+  </div>
+
+  <div id="rotate-prompt">
+    <div id="rotate-inner">Rotate your device to landscape</div>
   </div>
 
   <script src="js/input.js"></script>
@@ -22,6 +37,7 @@
   <script src="js/camera.js"></script>
   <script src="js/renderer.js"></script>
   <script src="js/save.js"></script>
+  <script src="js/touch.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
