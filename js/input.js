@@ -18,6 +18,11 @@ Game.Input = (function () {
     KeyS: 'slide',
     ArrowDown: 'slide',
     KeyR: 'restart',
+    Escape: 'pause',
+    Enter: 'confirm',
+    Backspace: 'back',
+    KeyL: 'levelselect',
+    KeyG: 'ghost',
   };
 
   window.addEventListener('keydown', (e) => {
@@ -25,7 +30,7 @@ Game.Input = (function () {
     if (!action) return;
     if (!held[action]) pressedQueue[action] = true;
     held[action] = true;
-    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'Backspace') {
       e.preventDefault();
     }
   });

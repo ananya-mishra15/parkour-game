@@ -8,6 +8,7 @@ Game.Touch = (function () {
     { id: 'touch-left',  action: 'left'  },
     { id: 'touch-right', action: 'right' },
     { id: 'touch-jump',  action: 'jump'  },
+    { id: 'touch-pause', action: 'pause' },
     { id: 'touch-restart', action: 'restart' },
   ];
 
@@ -32,7 +33,9 @@ Game.Touch = (function () {
         for (const t of e.changedTouches) {
           activeTouches[t.identifier] = zone.action;
           if (zone.action === 'jump') {
-            swipeTracking[t.identifier] = { startY: t.clientY };
+            const rect = el.getBoundingClientRect();
+            const relY = (t.clientY - rect.top) / rect.height;
+            swipeTracking[t.identifier] = { startY: t.clientY, lowerZone: relY > 0.6 };
           }
         }
         Game.Input.press(zone.action);
@@ -43,7 +46,7 @@ Game.Touch = (function () {
         if (zone.action !== 'jump') return;
         for (const t of e.changedTouches) {
           const sw = swipeTracking[t.identifier];
-          if (!sw || sw.triggered) continue;
+          if (!sw || sw.triggered || !sw.lowerZone) continue;
           if (t.clientY - sw.startY > SWIPE_THRESHOLD) {
             sw.triggered = true;
             Game.Input.press('slide');

@@ -11,7 +11,7 @@
     <canvas id="game" width="960" height="540"></canvas>
     <div id="hud">
       <div id="level-name">Loading...</div>
-      <div id="hint">← → move &nbsp;·&nbsp; Space jump (x2) &nbsp;·&nbsp; Shift slide &nbsp;·&nbsp; R restart &nbsp;·&nbsp; Shift+R reset save</div>
+      <div id="hint">← → move &nbsp;·&nbsp; Space jump (x2) &nbsp;·&nbsp; Shift slide &nbsp;·&nbsp; R restart &nbsp;·&nbsp; Esc pause &nbsp;·&nbsp; G ghost</div>
     </div>
     <div id="touch-controls" style="display:none">
       <div id="touch-left" class="touch-zone" aria-label="Move left">
@@ -23,6 +23,7 @@
       <div id="touch-jump" class="touch-zone" aria-label="Jump">
         <span class="touch-label">JUMP</span>
       </div>
+      <button id="touch-pause" aria-label="Pause">&#9646;&#9646;</button>
       <button id="touch-restart" aria-label="Restart">&#8634;</button>
     </div>
   </div>
@@ -37,8 +38,11 @@
   <script src="js/level.js"></script>
   <script src="js/player.js"></script>
   <script src="js/camera.js"></script>
+  <script src="js/particles.js"></script>
   <script src="js/renderer.js"></script>
   <script src="js/save.js"></script>
+  <script src="js/stars.js"></script>
+  <script src="js/ghost.js"></script>
   <script src="js/touch.js"></script>
   <script src="js/main.js"></script>
 </body>

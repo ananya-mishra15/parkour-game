@@ -346,25 +346,25 @@ Game.Renderer = (function () {
     ctx.fillRect(midX - 10, y + cp.h - 6, 20, 6);
   }
 
-  function drawCoinHud(ctx, collected, total) {
+  function drawCoinHud(ctx, collected, total, yOffset) {
     if (!total) return;
+    const y = (yOffset || 0) + 12;
     ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
     const label = `Coins: ${collected} / ${total}`;
-    const padX = 10, padY = 6;
+    const padX = 10;
     const w = ctx.measureText(label).width + padX * 2 + 24;
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fillRect(12, 12, w, 28);
-    // mini coin icon
+    ctx.fillRect(12, y, w, 28);
     ctx.fillStyle = '#f5c542';
     ctx.beginPath();
-    ctx.arc(12 + padX + 7, 12 + 14, 7, 0, Math.PI * 2);
+    ctx.arc(12 + padX + 7, y + 14, 7, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#a07a14';
     ctx.lineWidth = 1.2;
     ctx.stroke();
     ctx.fillStyle = '#fff';
     ctx.textAlign = 'left';
-    ctx.fillText(label, 12 + padX + 20, 12 + 21);
+    ctx.fillText(label, 12 + padX + 20, y + 21);
   }
 
   function drawBestTime(ctx, seconds, yOffset) {
@@ -381,16 +381,368 @@ Game.Renderer = (function () {
     ctx.fillText(label, 12 + padX, y + 16);
   }
 
-  function drawOverlay(ctx, viewW, viewH, text, sub) {
+  function drawStarShape(ctx, cx, cy, r, filled) {
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const angle = -Math.PI / 2 + i * (2 * Math.PI / 5);
+      const inner = -Math.PI / 2 + (i + 0.5) * (2 * Math.PI / 5);
+      ctx.lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
+      ctx.lineTo(cx + Math.cos(inner) * r * 0.4, cy + Math.sin(inner) * r * 0.4);
+    }
+    ctx.closePath();
+    if (filled) {
+      ctx.fillStyle = '#f5c542';
+      ctx.fill();
+      ctx.strokeStyle = '#a07a14';
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    }
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  function drawOverlay(ctx, viewW, viewH, text, sub, stars, medal, elapsed) {
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(0, 0, viewW, viewH);
     ctx.fillStyle = '#fff';
     ctx.textAlign = 'center';
     ctx.font = 'bold 48px -apple-system, BlinkMacSystemFont, sans-serif';
-    ctx.fillText(text, viewW / 2, viewH / 2 - 10);
+    ctx.fillText(text, viewW / 2, viewH / 2 - 30);
+
+    if (stars) {
+      const starY = viewH / 2 + 10;
+      for (let i = 0; i < 3; i++) {
+        drawStarShape(ctx, viewW / 2 - 40 + i * 40, starY, 14, stars[i]);
+      }
+    }
+
+    if (medal && elapsed != null) {
+      const medalColors = { gold: '#f5c542', silver: '#c0c0c0', bronze: '#cd7f32' };
+      const medalY = viewH / 2 + (stars ? 45 : 20);
+      ctx.fillStyle = medalColors[medal] || '#fff';
+      ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillText(formatTime(elapsed) + ' — ' + medal.charAt(0).toUpperCase() + medal.slice(1), viewW / 2, medalY);
+    }
+
     if (sub) {
+      const subY = viewH / 2 + (stars ? (medal ? 72 : 45) : 28);
+      ctx.fillStyle = '#fff';
       ctx.font = '18px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillText(sub, viewW / 2, viewH / 2 + 28);
+      ctx.fillText(sub, viewW / 2, subY);
+    }
+    ctx.textAlign = 'left';
+  }
+
+  function drawStarHud(ctx, totalStars, maxStars) {
+    ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+    const label = totalStars + ' / ' + maxStars;
+    const w = ctx.measureText(label).width + 34;
+    const x = 960 - 12 - w;
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(x, 12, w, 24);
+    drawStarShape(ctx, x + 12, 24, 7, true);
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, x + 22, 28);
+  }
+
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return (m > 0 ? m + ':' : '') + s.toFixed(2) + 's';
+  }
+
+  function drawTimer(ctx, elapsed, yOffset) {
+    ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
+    const label = formatTime(elapsed);
+    const padX = 10;
+    const w = ctx.measureText(label).width + padX * 2;
+    const y = (yOffset || 0) + 12;
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(12, y, w, 28);
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, 12 + padX, y + 20);
+  }
+
+  function isVisible(entity, cam, viewW, viewH) {
+    return entity.x + (entity.w || 0) > cam.x &&
+           entity.x < cam.x + viewW &&
+           entity.y + (entity.h || 0) > cam.y &&
+           entity.y < cam.y + viewH;
+  }
+
+  const THEMES = [
+    { name: 'Forest',    from: 0,  to: 8,  color: '#6b8e3a' },
+    { name: 'Expansion', from: 9,  to: 36, color: '#8a5a3b' },
+    { name: 'Cyber',     from: 37, to: 46, color: '#444a60' },
+    { name: 'Space',     from: 47, to: 71, color: '#1a1a4a' },
+    { name: 'Neon',      from: 72, to: 86, color: '#6a0080' },
+    { name: 'Bonus',     from: 87, to: 99, color: '#8b0000' },
+  ];
+
+  function drawTitleScreen(ctx, viewW, viewH, time, selection) {
+    const grad = ctx.createLinearGradient(0, 0, 0, viewH);
+    grad.addColorStop(0, '#87ceeb');
+    grad.addColorStop(1, '#cdebc4');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    drawParallaxTrees(ctx, { x: time * 30, y: 0 }, viewW, viewH);
+
+    // ground strip
+    ctx.fillStyle = '#6b8e3a';
+    ctx.fillRect(0, viewH - 60, viewW, 60);
+    ctx.fillStyle = '#9bcc55';
+    ctx.fillRect(0, viewH - 60, viewW, 6);
+
+    // running player animation
+    const px = (time * 120) % (viewW + 64) - 32;
+    ctx.fillStyle = '#9b6bd6';
+    roundRect(ctx, px, viewH - 60 - 52, 32, 52, 8);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(px + 20, viewH - 60 - 36, 4, 0, Math.PI * 2);
+    ctx.arc(px + 10, viewH - 60 - 36, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // title
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 64px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText('Parkour', viewW / 2, 140);
+
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 3;
+    ctx.strokeText('Parkour', viewW / 2, 140);
+
+    // subtitle
+    ctx.font = '20px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText('100 Levels of Pure Platforming', viewW / 2, 175);
+
+    // menu buttons
+    const options = ['Play', 'Level Select'];
+    const btnY = 240;
+    ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, sans-serif';
+    for (let i = 0; i < options.length; i++) {
+      const y = btnY + i * 60;
+      const tw = ctx.measureText(options[i]).width;
+      if (i === selection) {
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        roundRect(ctx, viewW / 2 - tw / 2 - 30, y - 28, tw + 60, 46, 12);
+        ctx.fill();
+        ctx.fillStyle = '#f5c542';
+      } else {
+        ctx.fillStyle = '#fff';
+      }
+      ctx.fillText(options[i], viewW / 2, y);
+    }
+    ctx.textAlign = 'left';
+  }
+
+  function drawLevelSelect(ctx, viewW, viewH, levels, saveData, selected, page, totalLevels) {
+    ctx.fillStyle = '#1a1f1a';
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    const cols = 10;
+    const rows = 5;
+    const perPage = cols * rows;
+    const totalPages = Math.ceil(totalLevels / perPage);
+    const startIndex = page * perPage;
+
+    // header
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText('Level Select', viewW / 2, 36);
+
+    // total stars
+    const totalStars = Game.Stars.getTotalStars(saveData);
+    ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#f5c542';
+    drawStarShape(ctx, viewW - 100, 28, 8, true);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(totalStars + ' / ' + (totalLevels * 3), viewW - 20, 32);
+
+    // back hint
+    ctx.textAlign = 'left';
+    ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('Esc: Back', 16, 32);
+
+    // grid
+    const gridLeft = 40;
+    const gridTop = 56;
+    const cellW = (viewW - 80) / cols;
+    const cellH = 78;
+    const highest = saveData.highestLevel;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const idx = startIndex + r * cols + c;
+        if (idx >= totalLevels) break;
+
+        const x = gridLeft + c * cellW;
+        const y = gridTop + r * cellH;
+        const unlocked = idx <= highest;
+        const isSelected = idx === selected;
+
+        // cell bg
+        const theme = THEMES.find(t => idx >= t.from && idx <= t.to);
+        ctx.fillStyle = isSelected ? 'rgba(245,197,66,0.25)' : 'rgba(255,255,255,0.06)';
+        roundRect(ctx, x + 2, y + 2, cellW - 4, cellH - 4, 6);
+        ctx.fill();
+
+        if (isSelected) {
+          ctx.strokeStyle = '#f5c542';
+          ctx.lineWidth = 2;
+          roundRect(ctx, x + 2, y + 2, cellW - 4, cellH - 4, 6);
+          ctx.stroke();
+        }
+
+        // theme color bar
+        if (theme) {
+          ctx.fillStyle = theme.color;
+          ctx.fillRect(x + 2, y + 2, 4, cellH - 4);
+        }
+
+        ctx.textAlign = 'center';
+        if (!unlocked) {
+          // locked
+          ctx.fillStyle = 'rgba(255,255,255,0.2)';
+          ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, sans-serif';
+          ctx.fillText('🔒', x + cellW / 2, y + cellH / 2 + 6);
+        } else {
+          // level number
+          ctx.fillStyle = isSelected ? '#f5c542' : '#fff';
+          ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
+          ctx.fillText('' + (idx + 1), x + cellW / 2, y + 22);
+
+          // stars
+          const stars = saveData.stars[idx] || [false, false, false];
+          for (let s = 0; s < 3; s++) {
+            drawStarShape(ctx, x + cellW / 2 - 16 + s * 16, y + 38, 6, stars[s]);
+          }
+
+          // best time
+          const bt = saveData.bestTimes[idx];
+          if (bt != null) {
+            ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.fillText(bt.toFixed(1) + 's', x + cellW / 2, y + 56);
+          }
+
+          // coin count
+          const coinsSaved = saveData.coins[idx] || [];
+          const levelData = levels[idx];
+          if (levelData && levelData.coins && levelData.coins.length > 0) {
+            const got = coinsSaved.filter(Boolean).length;
+            ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillStyle = got === levelData.coins.length ? '#f5c542' : 'rgba(255,255,255,0.4)';
+            ctx.fillText(got + '/' + levelData.coins.length, x + cellW / 2, y + 68);
+          }
+        }
+      }
+    }
+
+    // page nav
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText('Page ' + (page + 1) + ' / ' + totalPages, viewW / 2, viewH - 16);
+
+    if (page > 0) {
+      ctx.fillStyle = '#f5c542';
+      ctx.fillText('◀ Q', viewW / 2 - 100, viewH - 16);
+    }
+    if (page < totalPages - 1) {
+      ctx.fillStyle = '#f5c542';
+      ctx.fillText('E ▶', viewW / 2 + 100, viewH - 16);
+    }
+
+    // selected level name
+    if (selected >= 0 && selected < totalLevels && selected <= highest) {
+      ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillStyle = '#f5c542';
+      ctx.fillText(levels[selected].name, viewW / 2, viewH - 36);
+    }
+
+    ctx.textAlign = 'left';
+  }
+
+  function drawGhost(ctx, pos, cam) {
+    const x = Math.round(pos.x - cam.x);
+    const w = 32;
+    const h = pos.sliding ? 28 : 52;
+    const y = Math.round(pos.y - cam.y) + (pos.sliding ? 24 : 0);
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#6ba3d6';
+    roundRect(ctx, x, y, w, h, 8);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  function drawGhostHud(ctx, enabled) {
+    ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+    const label = 'Ghost: ' + (enabled ? 'ON' : 'OFF');
+    const w = ctx.measureText(label).width + 16;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(960 - 12 - w, 40, w, 20);
+    ctx.fillStyle = enabled ? '#6ba3d6' : 'rgba(255,255,255,0.4)';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, 960 - 12 - w + 8, 54);
+  }
+
+  function drawParticles(ctx, particles, cam) {
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      const alpha = Math.max(0, p.life / p.maxLife);
+      const x = Math.round(p.x - cam.x);
+      const y = Math.round(p.y - cam.y);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = p.color;
+      if (p.type === 'square') {
+        ctx.fillRect(x - p.size / 2, y - p.size / 2, p.size, p.size);
+      } else if (p.type === 'line') {
+        ctx.fillRect(x, y, p.size * 3, 2);
+      } else {
+        ctx.beginPath();
+        ctx.arc(x, y, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawPauseMenu(ctx, viewW, viewH, selection, options) {
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 42px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText('Paused', viewW / 2, viewH / 2 - 80);
+
+    const itemH = 44;
+    const startY = viewH / 2 - 20;
+    ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, sans-serif';
+    for (let i = 0; i < options.length; i++) {
+      const y = startY + i * itemH;
+      if (i === selection) {
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        const tw = ctx.measureText(options[i]).width;
+        roundRect(ctx, viewW / 2 - tw / 2 - 20, y - 22, tw + 40, 36, 8);
+        ctx.fill();
+        ctx.fillStyle = '#f5c542';
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      }
+      ctx.fillText(options[i], viewW / 2, y);
     }
     ctx.textAlign = 'left';
   }
@@ -411,5 +763,17 @@ Game.Renderer = (function () {
     drawCoinHud,
     drawBestTime,
     drawOverlay,
+    drawPauseMenu,
+    drawStarHud,
+    drawGhost,
+    drawGhostHud,
+    drawParticles,
+    drawStarShape,
+    drawTimer,
+    drawTitleScreen,
+    drawLevelSelect,
+    formatTime,
+    isVisible,
+    roundRect,
   };
 })();

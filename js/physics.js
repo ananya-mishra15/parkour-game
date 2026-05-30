@@ -47,6 +47,16 @@ Game.Physics = (function () {
         entity.x = s.x + s.w;
         entity.vx = 0;
         result.onWallLeft = true;
+      } else {
+        const overlapLeft = (entity.x + entity.w) - s.x;
+        const overlapRight = (s.x + s.w) - entity.x;
+        if (overlapLeft < overlapRight) {
+          entity.x = s.x - entity.w;
+          result.onWallRight = true;
+        } else {
+          entity.x = s.x + s.w;
+          result.onWallLeft = true;
+        }
       }
     }
 
@@ -57,7 +67,7 @@ Game.Physics = (function () {
       if (s.type === 'oneway') {
         // Only catch a falling entity whose previous-frame bottom was at/above the platform top.
         if (entity.vy <= 0) continue;
-        if (prevBottom > s.y + 0.5) continue;
+        if (prevBottom > s.y + Math.max(1, entity.vy * dt * 0.5)) continue;
         entity.y = s.y - entity.h;
         entity.vy = 0;
         result.onGround = true;

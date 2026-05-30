@@ -2,7 +2,7 @@ window.Game = window.Game || {};
 
 Game.Save = (function () {
   const KEY = 'parkour_game_save_v1';
-  const empty = () => ({ highestLevel: 0, coins: {}, bestTimes: {} });
+  const empty = () => ({ highestLevel: 0, coins: {}, bestTimes: {}, stars: {} });
 
   function load() {
     try {
@@ -36,5 +36,11 @@ Game.Save = (function () {
     persist();
   }
 
-  return { get, recordWin, reset };
+  function recordStars(levelIndex, newStars) {
+    const old = state.stars[levelIndex] || [false, false, false];
+    state.stars[levelIndex] = newStars.map((s, i) => s || !!old[i]);
+    persist();
+  }
+
+  return { get, recordWin, recordStars, reset };
 })();

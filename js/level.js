@@ -79,7 +79,7 @@ Game.Level = (function () {
   function update(level, dt) {
     // Rope pendulum integration — runs every frame so unoccupied ropes sway and
     // settle naturally. Occupied ropes get driven by the player elsewhere.
-    const DAMP = 0.8;
+    const DAMP = 0.4;
     for (const r of level.ropes) {
       if (r.occupied) continue;
       const alpha = -(Game.Physics.GRAVITY / r.length) * Math.sin(r.angle) - DAMP * r.omega;
@@ -119,6 +119,8 @@ Game.Level = (function () {
       if (!p.falling) {
         p.vx = (p.x - prevX) / dt;
         p.vy = (p.y - prevY) / dt;
+      } else {
+        p.vx = 0;
       }
     }
   }

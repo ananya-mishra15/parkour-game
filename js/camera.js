@@ -16,8 +16,10 @@ Game.Camera = (function () {
     cam.y += (targetY - cam.y) * Math.min(1, smoothing);
 
     // Clamp to level
-    cam.x = Math.max(0, Math.min(level.width - viewW, cam.x));
-    cam.y = Math.max(0, Math.min(Math.max(0, level.height - viewH), cam.y));
+    const maxX = level.width - viewW;
+    const maxY = level.height - viewH;
+    cam.x = maxX <= 0 ? maxX / 2 : Math.max(0, Math.min(maxX, cam.x));
+    cam.y = maxY <= 0 ? maxY / 2 : Math.max(0, Math.min(maxY, cam.y));
   }
 
   return { create, update };

@@ -39,6 +39,13 @@ Game.Player = (function () {
       zipSpeed: 0,
       ziplineReleaseCooldown: 0,
       cannonCooldown: 0,
+      cannonLaunched: false,
+      justLanded: false,
+      justDied: false,
+      justCollectedCoin: null,
+      justCheckpoint: null,
+      justCannon: false,
+      wasOnGround: false,
     };
   }
 
@@ -56,19 +63,25 @@ Game.Player = (function () {
 
   function checkHazardsAndGoal(player, level) {
     for (const h of level.hazards) {
-      if (P.aabbOverlap(player, h)) { player.dead = true; return true; }
+      if (P.aabbOverlap(player, h)) { player.dead = true; player.justDied = true; return true; }
     }
     if (level.coins) {
       for (const c of level.coins) {
-        if (!c.collected && P.aabbOverlap(player, c)) c.collected = true;
+        if (!c.collected && P.aabbOverlap(player, c)) {
+          c.collected = true;
+          player.justCollectedCoin = { x: c.x + c.w / 2, y: c.y + c.h / 2 };
+        }
       }
     }
     if (level.checkpoints) {
       for (const cp of level.checkpoints) {
-        if (!cp.activated && P.aabbOverlap(player, cp)) cp.activated = true;
+        if (!cp.activated && P.aabbOverlap(player, cp)) {
+          cp.activated = true;
+          player.justCheckpoint = { x: cp.x + cp.w / 2, y: cp.y };
+        }
       }
     }
-    if (player.y > level.height + 200) { player.dead = true; return true; }
+    if (player.y > level.height + 200) { player.dead = true; player.justDied = true; return true; }
     if (P.aabbOverlap(player, level.goal)) { player.reachedGoal = true; return true; }
     return false;
   }
@@ -98,6 +111,19 @@ Game.Player = (function () {
     player.x += player.vx * dt;
     player.y += player.vy * dt;
 
+    const solids = Game.Level.allSolids(level);
+    for (const s of solids) {
+      if (s.type === 'oneway') continue;
+      if (!P.aabbOverlap(player, s)) continue;
+      if (player.vy > 0) {
+        player.y = s.y - player.h;
+        player.vy = 0;
+      } else if (player.vy < 0) {
+        player.y = s.y + s.h;
+        player.vy = 0;
+      }
+    }
+
     // Side-exit: dropped off the side of the climb area.
     if (player.x + player.w * 0.5 < c.x || player.x + player.w * 0.5 > c.x + c.w) {
       player.climbing = null;
@@ -120,7 +146,7 @@ Game.Player = (function () {
     for (const c of level.climbs) {
       if (P.aabbOverlap(player, c)) {
         player.climbing = c;
-        player.climbGrace = 0.15;
+        player.climbGrace = 0.08;
         player.vx = 0; player.vy = 0;
         return true;
       }
@@ -142,6 +168,7 @@ Game.Player = (function () {
     // Pendulum integration (very light damping while held — feels lively).
     const alpha = -(P.GRAVITY / r.length) * Math.sin(r.angle) - 0.15 * r.omega;
     r.omega += alpha * dt;
+    r.omega = Math.max(-12, Math.min(12, r.omega));
     r.angle += r.omega * dt;
 
     const tipX = r.x + Math.sin(r.angle) * r.length;
@@ -219,7 +246,7 @@ Game.Player = (function () {
   function tryAttachZipline(player, level) {
     if (player.climbing || player.rope || player.zipline) return false;
     if (player.ziplineReleaseCooldown > 0) return false;
-    if (player.vy < 0) return false; // only attach while falling/stationary
+    if (player.vy < -200) return false; // reject only fast upward motion
     const cx = player.x + player.w / 2;
     const cy = player.y + player.h / 2;
     for (const z of level.ziplines) {
@@ -238,7 +265,7 @@ Game.Player = (function () {
       // Start speed = projection of current velocity onto line.
       const L = Math.sqrt(L2);
       player.zipSpeed = (player.vx * dx + player.vy * dy) / L;
-      if (player.zipSpeed < 40) player.zipSpeed = 40; // give a small push if attached from rest
+      if (player.zipSpeed < 20) player.zipSpeed = 20;
       return true;
     }
     return false;
@@ -299,8 +326,8 @@ Game.Player = (function () {
     if (player.sliding) {
       player.slideTimer -= dt;
       const wantsUp = !Input.isDown('slide');
-      if ((player.slideTimer <= 0 || wantsUp) && tryStandUp(player, solids)) {
-        // standing up handled inside tryStandUp
+      if (player.slideTimer <= 0 || wantsUp) {
+        tryStandUp(player, solids);
       }
     }
 
@@ -323,6 +350,7 @@ Game.Player = (function () {
         player.vy = P.WALL_JUMP_Y;
         player.jumpsLeft = 1;  // wall jump refreshes the air jump
         player.jumpBuffer = 0;
+        player.coyote = 0;
         player.facing = away;
       } else if (player.jumpsLeft > 0) {
         player.vy = P.DOUBLE_JUMP_VELOCITY;
@@ -334,7 +362,7 @@ Game.Player = (function () {
     // Variable jump height — release Space to cut upward velocity.
     // Suppressed while rising from a trampoline: the player isn't holding jump
     // during a bounce, so without this guard the launch gets slashed to ~74px.
-    if (!Input.isDown('jump') && player.vy < 0 && !player.bouncing) {
+    if (!Input.isDown('jump') && player.vy < 0 && !player.bouncing && !player.cannonLaunched) {
       player.vy *= 0.55;
     }
 
@@ -348,8 +376,9 @@ Game.Player = (function () {
     // Simple approach: if standing on a platform with vx, add its delta this frame.
     if (player.carry && player.carry.move) {
       player.x += player.carry.vx * dt;
-      // vertical carry: only when platform moves down faster than gravity could pull;
-      // for upward-moving platform, collision will push the player.
+      if (player.carry.vy < 0) {
+        player.y += player.carry.vy * dt;
+      }
     }
 
     // ----- Move & collide -----
@@ -369,19 +398,22 @@ Game.Player = (function () {
     // The launch immediately sets onGround=false, so this can't double-fire within a frame;
     // continuous bouncing only happens after the player falls back down onto it.
     if (player.onGround && player.carry && player.carry.type === 'bouncy') {
-      player.vy = -940;
+      player.vy = -(player.carry.bouncePower || 940);
       player.jumpsLeft = 2;
       player.onGround = false;
       player.bouncing = true;
     }
     if (player.bouncing && player.vy >= 0) player.bouncing = false;
+    if (player.cannonLaunched && player.vy >= 0) player.cannonLaunched = false;
 
     if (player.onGround) {
+      if (!player.wasOnGround) player.justLanded = true;
       player.jumpsLeft = 2;
       player.coyote = COYOTE_TIME;
     } else {
       player.coyote = Math.max(0, player.coyote - dt);
     }
+    player.wasOnGround = player.onGround;
 
     player.jumpBuffer = Math.max(0, player.jumpBuffer - dt);
 
@@ -397,7 +429,8 @@ Game.Player = (function () {
           player.cannonCooldown = 0.3;
           player.jumpsLeft = 2;
           player.onGround = false;
-          player.bouncing = true;
+          player.cannonLaunched = true;
+          player.justCannon = true;
           break;
         }
       }
